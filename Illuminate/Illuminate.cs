@@ -14,12 +14,13 @@
             await AsyncBreakfast.AsyncBreakfast.Main(args);
 #endif
 
+            //... [do work] ...
 
 
             //---[Exitpoint]---
+            while(Console.KeyAvailable) Console.ReadKey(true);
             Console.WriteLine("\n[Press any key to exit...]");
-            Console.In.ReadToEnd();
-            Console.ReadKey();
+            Console.ReadKey(true);
             return 0;
         }
     }
