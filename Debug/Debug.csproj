@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -19,6 +19,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp.CommandsNext\DisCatSharp.CommandsNext.csproj" />
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp.Common\DisCatSharp.Common.csproj" />
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp.Interactivity\DisCatSharp.Interactivity.csproj" />
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp.Lavalink\DisCatSharp.Lavalink.csproj" />
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp.SlashCommands\DisCatSharp.SlashCommands.csproj" />
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp.VoiceNext.Natives\DisCatSharp.VoiceNext.Natives.csproj" />
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp.VoiceNext\DisCatSharp.VoiceNext.csproj" />
+    <ProjectReference Include="..\..\DisCatSharp\DisCatSharp\DisCatSharp.csproj" />
     <ProjectReference Include="..\Extensions\Extensions.csproj" />
   </ItemGroup>
 

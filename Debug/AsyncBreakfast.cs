@@ -3,7 +3,7 @@
 	using System.Collections.Generic;
 	using System.Threading.Tasks;
 
-	internal class AsyncBreakfast {
+	internal static class AsyncBreakfast {
         internal static async Task Main(string[] args) {
             Coffee cup = PourCoffee();
             Console.WriteLine("coffee is ready");
