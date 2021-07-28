@@ -14,7 +14,7 @@
     using static Debug;
 #endif
 
-    internal static partial class Illuminate {
+    internal static class Illuminate {
         internal static readonly DiscordClient Client = new DiscordClient(Config.ClientConfig);
         internal static readonly CommandsNextExtension Commands = Client.UseCommandsNext(Config.CommandsConfig);
         internal static readonly InteractivityExtension Interactivity = Client.UseInteractivity(Config.InteractivityConfig);
@@ -47,11 +47,10 @@
             await connect;
         }
 
-
-        private static async Task ClientReady(DiscordClient sender, ReadyEventArgs e) {
+        private static Task ClientReady(DiscordClient sender, ReadyEventArgs e) {
             Console.WriteLine("Client Ready");
+            return Task.CompletedTask;
         }
-
 
         private static bool tornDown;
         internal static async Task TearDownAsync() {
