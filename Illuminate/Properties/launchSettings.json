@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Illuminate": {
+      "commandName": "Project",
+      "workingDirectory": "A:\\Projects\\Illuminate\\Illuminate"
+    }
+  }
+}

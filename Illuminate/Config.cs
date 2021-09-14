@@ -4,6 +4,7 @@
     using DisCatSharp;
     using DisCatSharp.CommandsNext;
     using DisCatSharp.Interactivity;
+    using DisCatSharp.SlashCommands;
 
     internal static class Config {
         internal static readonly DiscordConfiguration ClientConfig = new DiscordConfiguration {
@@ -32,5 +33,8 @@
         internal static readonly InteractivityConfiguration InteractivityConfig = new InteractivityConfiguration {
             Timeout = TimeSpan.FromMinutes(5)
         };
+
+
+        internal static readonly SlashCommandsConfiguration SlashCommandsConfig = new SlashCommandsConfiguration { };
     }
 }
