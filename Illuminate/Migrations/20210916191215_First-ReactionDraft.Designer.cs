@@ -3,14 +3,16 @@ using System;
 using DataLayer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Illuminate.Migrations
 {
     [DbContext(typeof(IlluminateContext))]
-    partial class IlluminateContextModelSnapshot : ModelSnapshot
+    [Migration("20210916191215_First-ReactionDraft")]
+    partial class FirstReactionDraft
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,20 +41,8 @@ namespace Illuminate.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<ulong?>("ChannelId")
+                    b.Property<ulong>("Id")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong?>("MessageId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Mutex")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Tag")
-                        .HasColumnType("TEXT");
 
                     b.HasKey("DbId");
 
@@ -71,40 +61,6 @@ namespace Illuminate.Migrations
                     b.HasKey("DbId");
 
                     b.ToTable("SwearWords");
-                });
-
-            modelBuilder.Entity("DataLayer.EmojiRolePair", b =>
-                {
-                    b.Property<int>("DbId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("EReactionMessageDbId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("EmojiName")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong>("RoleId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("DbId");
-
-                    b.HasIndex("EReactionMessageDbId");
-
-                    b.ToTable("EmojiRolePair");
-                });
-
-            modelBuilder.Entity("DataLayer.EmojiRolePair", b =>
-                {
-                    b.HasOne("DataLayer.EReactionMessage", null)
-                        .WithMany("Pairs")
-                        .HasForeignKey("EReactionMessageDbId");
-                });
-
-            modelBuilder.Entity("DataLayer.EReactionMessage", b =>
-                {
-                    b.Navigation("Pairs");
                 });
 #pragma warning restore 612, 618
         }

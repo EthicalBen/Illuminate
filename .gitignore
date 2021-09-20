@@ -340,3 +340,7 @@ healthchecksdb
 MigrationBackup/
 
 Illuminate/Secrets.cs
+
+Illuminate/Illuminate.db
+
+Illuminate/TODO.txt

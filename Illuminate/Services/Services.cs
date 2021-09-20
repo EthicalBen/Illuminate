@@ -1,27 +1,28 @@
 ﻿namespace Services {
-    using DisCatSharp.EventArgs;
-    using DisCatSharp;
-    using System.Threading.Tasks;
-
-    using Microsoft.EntityFrameworkCore.Internal;
-    using System;
-    using DisCatSharp.Entities;
-    using System.Linq;
-    using Illuminate;
-
 #if DEBUG
     using static Illuminate.Debug;
-    using DataLayer;
-    using Commands;
 #endif
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    using DisCatSharp;
+    using DisCatSharp.Entities;
+    using DisCatSharp.EventArgs;
+
+    using static Commands.CommandUtilities;
+    using System;
+    using System.Collections.Generic;
+    using DataLayer;
+    using Microsoft.EntityFrameworkCore;
 
     internal static class Services {
         internal static void RegisterServices(DiscordClient client) {
             client.GuildAvailable += SetUpForEcolinguist;
 
 #if LOCAL
-            client.MessageCreated += CheckMessage;
+            client.MessageReactionAdded += CheckReactions;
 #else
+            client.MessageCreated += CheckMessage;
             client.GuildMemberAdded += GuildMemberAddedAsync;
 #endif
         }
@@ -53,17 +54,11 @@
                 || false//await CommandUtilities.IsAuthorized(await e.Guild.GetMemberAsync(e.Author.Id))
             ) return;
 
-            IlluminateContext ictx = new();
-
-            string word = ictx.SwearWords.FirstOrDefault((word) => e.Message.Content.ToLowerInvariant().Contains(word.String))?.String;
+            string word = Ictx.SwearWords.FirstOrDefault((word) => e.Message.Content.ToLowerInvariant().Contains(word.String))?.String;
 
             if(word is not null)
                 await modChannel.SendMessageAsync($"Potential Swear Word Found:\nWord: ||{word}||\nChannel: {e.Channel.Mention}\n{e.Message.JumpLink}");
         }
-
-
-        #region Auto Member Role
-
 
         private static async Task GuildMemberAddedAsync(DiscordClient sender, GuildMemberAddEventArgs e) {
             if(!ready) return;
@@ -72,6 +67,28 @@
         }
 
 
-#endregion
+        private static async Task CheckReactions(DiscordClient sender, MessageReactionAddEventArgs e) {
+            EReactionMessage reactionMessage =
+                Ictx.ReactionMessages
+                .Include(r => r.Pairs)
+                .FirstOrDefault(r => r.MessageId == e.Message.Id && r.ChannelId == e.Channel.Id);
+
+            if(reactionMessage is not null) {
+                if(e.User == sender.CurrentUser) return;
+                if(e.User != sender.CurrentUser) await e.Message.DeleteReactionAsync(e.Emoji, e.User);
+
+                ulong? roleId = reactionMessage.Pairs.FirstOrDefault(x => x.EmojiName == e.Emoji.GetDiscordName())?.RoleId;
+
+                DiscordRole role = roleId is not null ? e.Guild.GetRole(roleId.Value) : null;
+
+                if(role is not null) {
+                    if(!((DiscordMember)e.User).Roles.Contains(role)) {
+                        await ((DiscordMember)e.User).GrantRoleAsync(role);
+                    } else {
+                        await ((DiscordMember)e.User).RevokeRoleAsync(role);
+                    }
+                }
+            }
+        }
     }
 }

@@ -3,14 +3,16 @@ using System;
 using DataLayer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Illuminate.Migrations
 {
     [DbContext(typeof(IlluminateContext))]
-    partial class IlluminateContextModelSnapshot : ModelSnapshot
+    [Migration("20210919175605_test4")]
+    partial class test4
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,20 +41,8 @@ namespace Illuminate.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<ulong?>("ChannelId")
+                    b.Property<ulong>("Id")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong?>("MessageId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Mutex")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Tag")
-                        .HasColumnType("TEXT");
 
                     b.HasKey("DbId");
 

@@ -1,11 +1,11 @@
 ﻿namespace Illuminate {
+#if DEBUG
+    using static Debug;
+#endif
     using System;
-    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
 
     using Commands;
-
-    using DataLayer;
 
     using DisCatSharp;
     using DisCatSharp.CommandsNext;
@@ -16,9 +16,6 @@
 
     using Services;
 
-#if DEBUG
-    using static Debug;
-#endif
 
     internal static class Illuminate{
         internal static readonly DiscordClient Client = new DiscordClient(Config.ClientConfig);
@@ -51,12 +48,12 @@
         private static async Task SetupAsync() { // redo this, add disposable, add resetevent, add timeout, https://stackoverflow.com/questions/4989626/wait-until-a-delegate-is-called
             Client.Ready += ClientReady;
             Task connect = Client.ConnectAsync();
-#if LOCAL
-            SlashCommands.RegisterCommands<LocalSlashCommands>();
-            Commands.RegisterCommands<LocalCommands>();
-#else
-            Commands.RegisterCommands<Commands>();
-#endif
+//#if LOCAL
+            SlashCommands.RegisterCommands<SlashCommands>(); 
+            //Commands.RegisterCommands<Commands>();
+//#else
+            //Commands.RegisterCommands<Commands>();
+//#endif
             await connect;
         }
 

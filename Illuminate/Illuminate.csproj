@@ -56,10 +56,4 @@
     <ProjectReference Include="..\Debug\Debug.csproj" />
   </ItemGroup>
   
-  <ItemGroup>
-    <None Update="Illuminate.db">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  
 </Project>

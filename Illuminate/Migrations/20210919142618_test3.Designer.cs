@@ -3,14 +3,16 @@ using System;
 using DataLayer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Illuminate.Migrations
 {
     [DbContext(typeof(IlluminateContext))]
-    partial class IlluminateContextModelSnapshot : ModelSnapshot
+    [Migration("20210919142618_test3")]
+    partial class test3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,20 +41,8 @@ namespace Illuminate.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<ulong?>("ChannelId")
+                    b.Property<ulong>("Id")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong?>("MessageId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Mutex")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Tag")
-                        .HasColumnType("TEXT");
 
                     b.HasKey("DbId");
 
@@ -82,8 +72,8 @@ namespace Illuminate.Migrations
                     b.Property<int?>("EReactionMessageDbId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("EmojiName")
-                        .HasColumnType("TEXT");
+                    b.Property<ulong>("EmojiId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<ulong>("RoleId")
                         .HasColumnType("INTEGER");
