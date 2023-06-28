@@ -2,9 +2,9 @@
     using System;
 
     using DisCatSharp;
+    using DisCatSharp.ApplicationCommands;
     using DisCatSharp.CommandsNext;
     using DisCatSharp.Interactivity;
-    using DisCatSharp.SlashCommands;
 
     internal static class Config {
         internal static readonly DiscordConfiguration ClientConfig = new DiscordConfiguration {
@@ -35,6 +35,6 @@
         };
 
 
-        internal static readonly SlashCommandsConfiguration SlashCommandsConfig = new SlashCommandsConfiguration { };
+        internal static readonly ApplicationCommandsConfiguration ApplicationCommandsConfig = new ApplicationCommandsConfiguration { };
     }
 }

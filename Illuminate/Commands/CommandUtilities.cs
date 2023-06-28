@@ -8,7 +8,7 @@
     using DisCatSharp;
     using DisCatSharp.CommandsNext;
     using DisCatSharp.Entities;
-    using DisCatSharp.SlashCommands;
+    using DisCatSharp.ApplicationCommands;
 
     using static Services.Services;
 

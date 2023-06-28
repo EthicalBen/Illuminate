@@ -11,26 +11,22 @@
     using DisCatSharp;
     using DisCatSharp.Entities;
     using DisCatSharp.Interactivity;
-    using DisCatSharp.SlashCommands;
+    using DisCatSharp.ApplicationCommands;
 
     using Illuminate;
 
     using static CommandUtilities;
-    using DisCatSharp.CommandsNext.Converters;
-    using System.Collections.Generic;
     using Microsoft.EntityFrameworkCore;
-    using System.Security.Cryptography.X509Certificates;
-    using System.Reflection.Metadata.Ecma335;
-    using System.Net.Http;
-using Illuminate.Migrations;
+    using Illuminate.Migrations;
+    using Microsoft.CSharp.RuntimeBinder;
 
-    internal class SlashCommands:SlashCommandModule {
+    internal class SlashCommands:ApplicationCommandsModule {
 
         [SlashCommandGroup("swear-words", "The swear words module", true)]
         private class SwearWords {
             [SlashCommand("add", "Add a swear word")]
             private async Task Add(InteractionContext ctx, [Option("word", "The word to add")] string word) {
-#if !LOCAL
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 word = word.Trim('|').ToLowerInvariant();
@@ -46,7 +42,7 @@ using Illuminate.Migrations;
 
             [SlashCommand("remove", "Remove a swear word")]
             private async Task Remove(InteractionContext ctx, [Option("word", "The word to remove")] string word) {
-#if !LOCAL
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 word = word.Trim('|').ToLowerInvariant();
@@ -69,7 +65,7 @@ using Illuminate.Migrations;
 
             [SlashCommand("list", "List swear words")]
             private async Task List(InteractionContext ctx) {
-#if !LOCAL
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -90,7 +86,7 @@ using Illuminate.Migrations;
 
             [SlashCommand("reset", "clear swear words")]
             private async Task ResetSwearWords(InteractionContext ctx) {
-#if !LOCAL
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -114,7 +110,7 @@ using Illuminate.Migrations;
 
         [SlashCommand("purge", "purges messages from a channel")]
         private async Task Purge(InteractionContext ctx, [Option("amount", "How many messages to remove")] long amount = 1) {
-#if !LOCAL
+#if RELEASE
             if(!IsAuthorized(ctx.Member)) return;
 
             if(amount > 0) {
@@ -141,7 +137,7 @@ using Illuminate.Migrations;
 
         [SlashCommand("beep", "Boop the next person to send a message here")]
         private async Task Beep(InteractionContext ctx) {
-#if !LOCAL
+#if RELEASE
             if(!IsAuthorized(ctx.Member)) return;
 
             await ctx.CreateResponseAsync(
@@ -167,7 +163,7 @@ using Illuminate.Migrations;
             [Option("message", "what")]
             string message = "<3"
         ) {
-#if !LOCAL
+#if RELEASE
             if(!IsAuthorized(ctx.Member)) return;
 
             channel ??= ctx.Channel;
@@ -196,6 +192,7 @@ using Illuminate.Migrations;
                 [Option("emoji", "What emoji")]
                 string rawEmoji
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -234,7 +231,7 @@ using Illuminate.Migrations;
                         return;
                     }
 
-                    EmojiRolePair existingPair = reactionMessage.Pairs.FirstOrDefault(p => p.RoleId == role.Id);
+                    EEmojiRolePair existingPair = reactionMessage.Pairs.FirstOrDefault(p => p.RoleId == role.Id);
                     if(existingPair is not null) {
                         if(existingPair.EmojiName == emoji.GetDiscordName()) {
                             await ctx.EditResponseAsync("Nothing to add.");
@@ -246,6 +243,8 @@ using Illuminate.Migrations;
                         await UpdateReactionMessage(ctx, reactionMessage);
 
                         await ctx.EditResponseAsync($"Updated Emoji for existing role.");
+
+                        await ctx.FollowUpAsync("[Preview]\n" + CreateMessageBody(ctx, reactionMessage));
                         return;
                     }
 
@@ -257,19 +256,26 @@ using Illuminate.Migrations;
 
                     await ctx.FollowUpAsync("[Preview]\n" + CreateMessageBody(ctx, reactionMessage));
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
 
 
-            private static async Task UpdateReactionMessage(InteractionContext ctx, EReactionMessage reactionMessage) {
+#if RELEASE
+            private static string DraftOrMessage(EReactionMessage reactionMessage)
+                => reactionMessage.MessageId is not null ? "message" : "draft";
+
+
+            private static async Task UpdateReactionMessage(InteractionContext ctx, EReactionMessage reactionMessage, DiscordMessage message = null) {
                 if(reactionMessage.MessageId is not null) {
-                    DiscordMessage message =
-                        await Illuminate.Client
-                        .GetChannelAsync((ulong)reactionMessage.ChannelId)
-                        .ContinueWith(t => t.Result.GetMessageAsync((ulong)reactionMessage.MessageId).Result);
+                    if(message is null)
+                        message =
+                            await Illuminate.Client
+                            .GetChannelAsync((ulong)reactionMessage.ChannelId)
+                            .ContinueWith(t => t.Result.GetMessageAsync((ulong)reactionMessage.MessageId).Result);
+
                     await message.DeleteAllReactionsAsync();
 
-
-                    foreach(EmojiRolePair pair in reactionMessage.Pairs)
+                    foreach(EEmojiRolePair pair in reactionMessage.Pairs)
                         await message.CreateReactionAsync(DiscordEmoji.FromName(Illuminate.Client, pair.EmojiName));
 
                     string content = CreateMessageBody(ctx, reactionMessage);
@@ -280,12 +286,13 @@ using Illuminate.Migrations;
 
             private static string CreateMessageBody(InteractionContext ctx, EReactionMessage reactionMessage) {
                 string content = reactionMessage.Content;
-                foreach(EmojiRolePair pair in reactionMessage.Pairs) {
+                foreach(EEmojiRolePair pair in reactionMessage.Pairs) {
                     content += $"\n{pair.EmojiName}: {ctx.Channel.Guild.GetRole(pair.RoleId).Mention}";
                 }
 
                 return content;
             }
+#endif
 
 
             [SlashCommand("create", "Create a reaction role draft")]
@@ -301,6 +308,7 @@ using Illuminate.Migrations;
                 [Option("mutex", "Will the roles be mutually exclusive")]
                 Boolean rawMutex
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -316,6 +324,7 @@ using Illuminate.Migrations;
                     await ctx.FollowUpAsync("[Preview]\n" + CreateMessageBody(ctx, reactionMessage));
 
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
 
 
@@ -332,6 +341,7 @@ using Illuminate.Migrations;
                 [Option("mutex", "New mutual exclusivity value")]
                 Boolean rawMutex = (Boolean)2
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -340,6 +350,7 @@ using Illuminate.Migrations;
 
                     EReactionMessage reactionMessage =
                         Ictx.ReactionMessages
+                        .Include(x => x.Pairs)
                         .FirstOrDefault(x => x.Tag == tag);
 
                     if(reactionMessage is null) {
@@ -354,8 +365,9 @@ using Illuminate.Migrations;
 
                     if(content is not null)
                         reactionMessage.Content = content;
-                    if(mutex is null)
+                    if(mutex is not null)
                         reactionMessage.Mutex = (bool)mutex;
+                    Ictx.Entry(reactionMessage).State = EntityState.Modified;
                     Ictx.SaveChanges();
 
 
@@ -368,9 +380,21 @@ using Illuminate.Migrations;
                         $" tagged \"{tag}\"."
                     );
 
-                    await ctx.FollowUpAsync("[Preview]\n" + CreateMessageBody(ctx, reactionMessage));
+                    if(reactionMessage.MessageId is not null && content is not null) {
+                        DiscordMessage message =
+                            await (
+                                await Illuminate.Client
+                                .GetChannelAsync((ulong)reactionMessage.ChannelId)
+                            )
+                            .GetMessageAsync((ulong)reactionMessage.MessageId);
+                        await UpdateReactionMessage(ctx, reactionMessage, message);
+                        await ctx.FollowUpAsync($"[Link]\n{message.JumpLink}");
+                    } else {
+                        await ctx.FollowUpAsync("[Preview]\n" + CreateMessageBody(ctx, reactionMessage));
+                    }
 
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
 
 
@@ -384,6 +408,7 @@ using Illuminate.Migrations;
                 [Option("role", "Role to remove from the draft or message")]
                 DiscordRole role
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -399,7 +424,7 @@ using Illuminate.Migrations;
                         return;
                     }
 
-                    EmojiRolePair pair = reactionMessage.Pairs.FirstOrDefault(x => x.RoleId == role.Id);
+                    EEmojiRolePair pair = reactionMessage.Pairs.FirstOrDefault(x => x.RoleId == role.Id);
 
                     if(pair is null) {
                         await ctx.EditResponseAsync($"Role not present in {DraftOrMessage(reactionMessage)}.");
@@ -415,11 +440,8 @@ using Illuminate.Migrations;
                     await ctx.FollowUpAsync("[Preview]\n" + CreateMessageBody(ctx, reactionMessage));
 
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
-
-
-            private static string DraftOrMessage(EReactionMessage reactionMessage)
-                => reactionMessage.MessageId is not null ? "message" : "draft";
 
 
             [SlashCommand("delete", "Delete a draft or message")]
@@ -429,6 +451,7 @@ using Illuminate.Migrations;
                 [Option("tag", "Tag of the draft or message")]
                 string tag
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -447,11 +470,21 @@ using Illuminate.Migrations;
                     Ictx.ReactionMessages.Remove(reactionMessage);
                     Ictx.SaveChanges();
 
+                    if(reactionMessage.MessageId is not null) {
+                        try {
+                            DiscordChannel channel = await Illuminate.Client.GetChannelAsync((ulong)reactionMessage.ChannelId);
+                            DiscordMessage message = await channel.GetMessageAsync((ulong)reactionMessage.MessageId);
+                            channel.DeleteMessageAsync(message);
+                        } catch { }
+                    }
+
+
                     await ctx.EditResponseAsync($"Deleted {DraftOrMessage(reactionMessage)} tagged \"{tag}\"");
 
                     await ctx.FollowUpAsync($"[Deleted {DraftOrMessage(reactionMessage)}]\n" + CreateMessageBody(ctx, reactionMessage));
 
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
 
 
@@ -465,6 +498,7 @@ using Illuminate.Migrations;
                 [Option("channel", "Where the message will live")]
                 DiscordChannel channel
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -488,11 +522,14 @@ using Illuminate.Migrations;
                     reactionMessage.ChannelId = channel.Id;
                     DiscordMessage message = await channel.SendMessageAsync("Setting up reaction roles...");
                     reactionMessage.MessageId = message.Id;
-                    await UpdateReactionMessage(ctx, reactionMessage);
+                    Ictx.Entry(reactionMessage).State = EntityState.Modified;
+                    Ictx.SaveChanges();
+                    await UpdateReactionMessage(ctx, reactionMessage, message);
 
                     await ctx.EditResponseAsync($"Published message tagged \"{tag}\" in channel {channel.Mention}:\n{message.JumpLink}");
 
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
 
 
@@ -500,6 +537,7 @@ using Illuminate.Migrations;
             private async Task List(
                 InteractionContext ctx
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -526,6 +564,7 @@ using Illuminate.Migrations;
                     await ctx.EditResponseAsync(content);
 
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
 
 
@@ -536,6 +575,7 @@ using Illuminate.Migrations;
                 [Option("tag", "Tag of the draft")]
                 string tag
             ) {
+#if RELEASE
                 if(!IsAuthorized(ctx.Member)) return;
 
                 try {
@@ -564,13 +604,109 @@ using Illuminate.Migrations;
                     await ctx.EditResponseAsync("[Preview]\n" + CreateMessageBody(ctx, reactionMessage));
 
                 } catch(Exception e) { await LogToSource(ctx, e); }
+#endif
             }
         }
+
+
+        [SlashCommandGroup("raid-protect", "The raid protection module")]
+        private class RaidProtect {
+
+            [SlashCommand("state", "Enables or disables the module")]
+            private async Task State(
+                InteractionContext ctx,
+
+                [Option("state", "On? Off?")]
+                State state
+            ) {
+                if(!IsAuthorized(ctx.Member)) return;
+
+                try {
+                    await ctx.DeferResponseAsync();
+
+                    await ctx.EditResponseAsync("[Not Implemented]");
+
+                } catch(Exception e) { await LogToSource(ctx, e); }
+            }
+        }
+
+
+        [SlashCommand("debug", "What effect does this command have? Roll a D20 to find out!")]
+        private async Task Debug(
+            InteractionContext ctx
+        ) {
+#if DEBUG
+            if(ctx.User.Id != 290921830515212298) { //If not me: Play dead.
+                await ctx.CreateResponseAsync($"You rolled a {new Random().Next(1, 20)}, but nothing happened. Try again?");
+                return;
+            }
+
+            DiscordChannel devChannel = Services.Services.Ecolinguist.GetChannel(875797784354226186);
+
+            try {
+                DiscordChannelWrapper channel = ctx.Channel;
+                channel ??= ctx.Guild.GetThread(ctx.Interaction.ChannelId);
+
+                await ctx.CreateResponseAsync("Sending message...");
+                await channel.SendMessageAsync("test");
+            } catch(Exception e) {
+                await devChannel.SendMessageAsync(e.Message);
+            }
+#endif
+        }
+
+        class DiscordChannelWrapper {
+            static DiscordChannelWrapper() {
+                if(
+                    false
+                    // || Test 1
+                    // || Test 2
+                    // || Test 3
+                    // || Test 4
+
+
+
+
+
+
+                ) throw new RuntimeBinderException();
+            }
+
+
+            private DiscordChannelWrapper() { }
+
+            dynamic channel;
+            public Task<DiscordMessage> SendMessageAsync(string content) =>
+                channel.SendMessageAsync(content);
+
+            public static implicit operator DiscordChannelWrapper(DiscordChannel channel) {
+                if(channel is null) return null;
+
+                DiscordChannelWrapper channelWrapper = new();
+                channelWrapper.channel = channel;
+                return channelWrapper;
+            }
+
+            public static implicit operator DiscordChannelWrapper(DiscordThreadChannel channel) {
+                if(channel is null) return null;
+
+                DiscordChannelWrapper channelWrapper = new();
+                channelWrapper.channel = channel;
+                return channelWrapper;
+            }
+        }
+
 
 
         internal enum Boolean {
             @true = 1,
             @false = 0
+        }
+
+
+        internal enum State {
+            enable = 1,
+            disable = 0
         }
     }
 }

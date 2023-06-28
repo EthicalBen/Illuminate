@@ -14,14 +14,15 @@
     using System.Collections.Generic;
     using DataLayer;
     using Microsoft.EntityFrameworkCore;
+    using System.Security.Cryptography.X509Certificates;
 
     internal static class Services {
         internal static void RegisterServices(DiscordClient client) {
             client.GuildAvailable += SetUpForEcolinguist;
 
 #if LOCAL
-            client.MessageReactionAdded += CheckReactions;
 #else
+            client.MessageReactionAdded += CheckReactions;
             client.MessageCreated += CheckMessage;
             client.GuildMemberAdded += GuildMemberAddedAsync;
 #endif
@@ -72,7 +73,6 @@
                 Ictx.ReactionMessages
                 .Include(r => r.Pairs)
                 .FirstOrDefault(r => r.MessageId == e.Message.Id && r.ChannelId == e.Channel.Id);
-
             if(reactionMessage is not null) {
                 if(e.User == sender.CurrentUser) return;
                 if(e.User != sender.CurrentUser) await e.Message.DeleteReactionAsync(e.Emoji, e.User);
@@ -87,6 +87,17 @@
                     } else {
                         await ((DiscordMember)e.User).RevokeRoleAsync(role);
                     }
+                    if(reactionMessage.Mutex)
+                        reactionMessage.Pairs
+                            .Where(x => x.RoleId != roleId)
+                            .ToList()
+                            .ForEach(
+                                async x => {
+                                    DiscordRole role = e.Guild.GetRole(x.RoleId);
+                                    if(((DiscordMember)e.User).Roles.Contains(role))
+                                        await ((DiscordMember)e.User).RevokeRoleAsync(role);
+                                }
+                            );
                 }
             }
         }

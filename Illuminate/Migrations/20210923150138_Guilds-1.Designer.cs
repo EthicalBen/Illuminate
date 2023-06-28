@@ -3,14 +3,16 @@ using System;
 using DataLayer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Illuminate.Migrations
 {
     [DbContext(typeof(IlluminateContext))]
-    partial class IlluminateContextModelSnapshot : ModelSnapshot
+    [Migration("20210923150138_Guilds-1")]
+    partial class Guilds1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -25,12 +27,6 @@ namespace Illuminate.Migrations
                     b.Property<ulong>("Id")
                         .HasColumnType("INTEGER");
 
-                    b.Property<ulong?>("memberRoleId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong?>("modChannelId")
-                        .HasColumnType("INTEGER");
-
                     b.HasKey("DbId");
 
                     b.ToTable("Guilds");
@@ -42,18 +38,18 @@ namespace Illuminate.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("GuildDbId")
+                    b.Property<int?>("EDiscordGuildDbId")
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("Id")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("JoinedAt")
+                    b.Property<DateTime>("JoinedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("DbId");
 
-                    b.HasIndex("GuildDbId");
+                    b.HasIndex("EDiscordGuildDbId");
 
                     b.ToTable("Members");
                 });
@@ -64,10 +60,13 @@ namespace Illuminate.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("EDiscordMemberDbId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<ulong>("Id")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("DbId");
@@ -160,11 +159,9 @@ namespace Illuminate.Migrations
 
             modelBuilder.Entity("DataLayer.EDiscordMember", b =>
                 {
-                    b.HasOne("DataLayer.EDiscordGuild", "Guild")
+                    b.HasOne("DataLayer.EDiscordGuild", null)
                         .WithMany("Members")
-                        .HasForeignKey("GuildDbId");
-
-                    b.Navigation("Guild");
+                        .HasForeignKey("EDiscordGuildDbId");
                 });
 
             modelBuilder.Entity("DataLayer.EDiscordMessage", b =>

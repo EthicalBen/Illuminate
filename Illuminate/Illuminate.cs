@@ -12,16 +12,15 @@
     using DisCatSharp.EventArgs;
     using DisCatSharp.Interactivity;
     using DisCatSharp.Interactivity.Extensions;
-    using DisCatSharp.SlashCommands;
+    using DisCatSharp.ApplicationCommands;
 
     using Services;
 
-
-    internal static class Illuminate{
+    internal static class Illuminate {
         internal static readonly DiscordClient Client = new DiscordClient(Config.ClientConfig);
         internal static readonly CommandsNextExtension Commands = Client.UseCommandsNext(Config.CommandsConfig);
         internal static readonly InteractivityExtension Interactivity = Client.UseInteractivity(Config.InteractivityConfig);
-        internal static readonly SlashCommandsExtension SlashCommands = Client.UseSlashCommands(Config.SlashCommandsConfig);
+        internal static readonly ApplicationCommandsExtension ApplicationCommands = Client.UseApplicationCommands(Config.ApplicationCommandsConfig);
 
         private static async Task<int> Main(string[] args) {
             //---[Entrypoint]---
@@ -32,6 +31,7 @@
             //await AsyncBreakfast.AsyncBreakfast.Main(args);
 #endif
             await SetupAsync();
+
 
             //---[Exitpoint]---
             while(Console.KeyAvailable) Console.ReadKey(true);
@@ -44,12 +44,11 @@
             return 0;
         }
 
-
         private static async Task SetupAsync() { // redo this, add disposable, add resetevent, add timeout, https://stackoverflow.com/questions/4989626/wait-until-a-delegate-is-called
             Client.Ready += ClientReady;
             Task connect = Client.ConnectAsync();
 //#if LOCAL
-            SlashCommands.RegisterCommands<SlashCommands>(); 
+            ApplicationCommands.RegisterGlobalCommands<SlashCommands>();
             //Commands.RegisterCommands<Commands>();
 //#else
             //Commands.RegisterCommands<Commands>();
