@@ -339,8 +339,12 @@ healthchecksdb
 # Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
 
-Illuminate/Secrets.cs
+Secrets.cs
 
 Illuminate/Illuminate.db
 
 Illuminate/TODO.txt
+
+.DS_Store
+
+DisCatSharp
