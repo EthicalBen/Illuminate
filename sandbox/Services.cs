@@ -11,31 +11,41 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Illuminate;
 
-internal static partial class Services {
-    internal static void RegisterServices(DiscordClient client) {
+internal static partial class Services
+{
+    internal static void RegisterServices(DiscordClient client)
+    {
         client.GuildAvailable += SetUpForEcolinguist;
 
         client.MessageCreated += CheckMessage;
+
+        client.MessageCreated += HandleIntros;
     }
 
     static DiscordGuild? Ecolinguist;
     static DiscordChannel? FakeYtUploads;
     static DiscordChannel? YouTubeVideos;
     static DiscordChannel? IlluminatePlayground;
+    static DiscordChannel? CarlPings;
+    static DiscordChannel? Introductions;
     static DiscordRole? EcolinguistVideoRole;
     static DiscordRole? GermanicVideoRole;
     static DiscordRole? SlavicVideoRole;
     static DiscordRole? RomanceVideoRole;
     static DiscordRole? PolishVideoRole;
+    static DiscordRole? IntroPingRole;
     static DiscordUser? CarlBot;
     static DiscordEmoji? Sparkles;
     static DiscordEmoji? VideoYes;
     static DiscordEmoji? VideoNo;
     static DiscordEmoji? StreamYes;
+    static DiscordEmoji? GreenCheck;
 
     static bool setupFinished;
-    static async Task SetUpForEcolinguist(DiscordClient client, GuildCreateEventArgs e) {
-        if (e.Guild.Name == "Ecolinguist") {
+    static async Task SetUpForEcolinguist(DiscordClient client, GuildCreateEventArgs e)
+    {
+        if (e.Guild.Name == "Ecolinguist")
+        {
             //Server
             Ecolinguist = e.Guild;
 
@@ -43,6 +53,9 @@ internal static partial class Services {
             FakeYtUploads = Ecolinguist.Channels.FirstOrDefault(guild => guild.Key == (ulong)ChannelIDs.FakeYtUploads).Value;
             YouTubeVideos = Ecolinguist.Channels.FirstOrDefault(guild => guild.Key == (ulong)ChannelIDs.YouTubeVideos).Value;
             IlluminatePlayground = Ecolinguist.Channels.FirstOrDefault(guild => guild.Key == (ulong)ChannelIDs.IlluminatePlayground).Value;
+            Introductions = Ecolinguist.Channels.FirstOrDefault(guild => guild.Key == (ulong)ChannelIDs.Introductions).Value;
+            CarlPings = Ecolinguist.Channels.FirstOrDefault(guild => guild.Key == (ulong)ChannelIDs.CarlPings).Value;
+
 
             //Roles
             EcolinguistVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.EcolinguistVideoRole).Value;
@@ -50,6 +63,7 @@ internal static partial class Services {
             SlavicVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.SlavicVideoRole).Value;
             RomanceVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.RomanceVideoRole).Value;
             PolishVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.PolishVideoRole).Value;
+            IntroPingRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.IntroPingRole).Value;
 
             //Dict
             /*
@@ -66,7 +80,6 @@ internal static partial class Services {
             mentions["polish"] = PolishVideoRole.Mention;
             mentions["romance"] = RomanceVideoRole.Mention;
 
-
             //Users
             CarlBot = await client.GetUserAsync((ulong)UserIDs.CarlBot);
 
@@ -75,6 +88,8 @@ internal static partial class Services {
             VideoYes = DiscordEmoji.FromName(client, ":ok_hand:");
             VideoNo = DiscordEmoji.FromName(client, ":scream_cat:");
             StreamYes = DiscordEmoji.FromName(client, ":thumbsdown:");
+            GreenCheck = DiscordEmoji.FromName(client, ":welcome:");
+
 
             //done
             setupFinished = true;
@@ -107,8 +122,9 @@ internal static partial class Services {
         " Your wait is over! Norbert just released a new video! ",
     };
 
-    static async Task CheckMessage(DiscordClient client, MessageCreateEventArgs e) {
-        if(!setupFinished || e.Author == client.CurrentUser) return;
+    static async Task CheckMessage(DiscordClient client, MessageCreateEventArgs e)
+    {
+        if (!setupFinished || e.Author == client.CurrentUser) return;
         Console.WriteLine("Message received. Not ours, and client is ready.");
 
         DiscordMessage msg = e.Message;
@@ -124,7 +140,8 @@ internal static partial class Services {
 
         //Step 2: HttpClient to check if shorts
         HttpResponseMessage ytResponse = await httpClient.GetAsync(vidId);
-        if (ytResponse.IsSuccessStatusCode) {
+        if (ytResponse.IsSuccessStatusCode)
+        {
             await msg.CreateReactionAsync(VideoNo!);
             return;
         }
@@ -156,19 +173,49 @@ internal static partial class Services {
 
     [GeneratedRegex("^https://youtu.be/(?<VideoID>[^ ]+) (?<channelName>slavic|germanic|ecolinguist|polish|romance)$", RegexOptions.ExplicitCapture | RegexOptions.Compiled)]
     private static partial Regex messageMatcher();
+
+    static async Task HandleIntros(DiscordClient client, MessageCreateEventArgs e)
+    {
+        if (!setupFinished || e.Author == client.CurrentUser) return;
+        Console.WriteLine("Message received. Not ours, and client is ready.");
+
+        DiscordMessage msg = e.Message;
+        if (msg.Channel != Introductions!) return;
+        Console.WriteLine("IntroductionsChannelMessage");
+
+        //// msg not long enough
+        //if (msg.Content.Length <= 130)
+        //{
+        //    await msg.DeleteAsync();
+        //    await msg.RespondAsync();
+
+        //    return;
+        //    // delete msg, funeral msg, "msg too short pls prolongue + copypaste og msg"
+        //}
+
+        await CarlPings!.SendMessageAsync($"{IntroPingRole!.Mention} new intro");
+    }
 }
+
 file enum RoleIDs:ulong {
     EcolinguistVideoRole = 1101849321349070858,
     GermanicVideoRole = 1101850559016869968,
     SlavicVideoRole = 1101850758607020052,
     RomanceVideoRole = 1101850296587649114,
     PolishVideoRole = 1101850816056406047,
+    IntroPingRole = 1208816932019634237,
 }
+
+
 file enum ChannelIDs:ulong {
     FakeYtUploads = 1065596986847399936,
     YouTubeVideos = 861223379076251658,
     IlluminatePlayground = 875797784354226186,
+    CarlPings = 937314762218422273,
+    Introductions = 1201538093866549288,
 }
+
+
 file enum UserIDs:ulong {
     CarlBot = 235148962103951360,
 }
