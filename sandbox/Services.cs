@@ -19,7 +19,9 @@ internal static partial class Services
 
         client.MessageCreated += CheckMessage;
 
-        client.MessageCreated += HandleIntros;
+        client.MessageCreated += StartHandlingIntros;
+
+        client.MessageUpdated += HandleEditedIntros;
     }
 
     static DiscordGuild? Ecolinguist;
@@ -34,6 +36,7 @@ internal static partial class Services
     static DiscordRole? RomanceVideoRole;
     static DiscordRole? PolishVideoRole;
     static DiscordRole? IntroPingRole;
+    static DiscordRole? MemberRole;
     static DiscordUser? CarlBot;
     static DiscordEmoji? Sparkles;
     static DiscordEmoji? VideoYes;
@@ -64,6 +67,7 @@ internal static partial class Services
             RomanceVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.RomanceVideoRole).Value;
             PolishVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.PolishVideoRole).Value;
             IntroPingRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.IntroPingRole).Value;
+            MemberRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.MemberRole).Value;
 
             //Dict
             /*
@@ -88,7 +92,7 @@ internal static partial class Services
             VideoYes = DiscordEmoji.FromName(client, ":ok_hand:");
             VideoNo = DiscordEmoji.FromName(client, ":scream_cat:");
             StreamYes = DiscordEmoji.FromName(client, ":thumbsdown:");
-            GreenCheck = DiscordEmoji.FromName(client, ":welcome:");
+            GreenCheck = DiscordEmoji.FromName(client, ":check_green:");
 
 
             //done
@@ -174,36 +178,148 @@ internal static partial class Services
     [GeneratedRegex("^https://youtu.be/(?<VideoID>[^ ]+) (?<channelName>slavic|germanic|ecolinguist|polish|romance)$", RegexOptions.ExplicitCapture | RegexOptions.Compiled)]
     private static partial Regex messageMatcher();
 
-    static async Task HandleIntros(DiscordClient client, MessageCreateEventArgs e)
-    {
+
+
+
+
+
+
+
+
+
+
+    static Dictionary<ulong, (Task, CancellationTokenSource)> runningIntroTasks = new ();
+
+    static async Task StartHandlingIntros(DiscordClient client, MessageCreateEventArgs e) {
+        CancellationTokenSource cancellationTokenSource = new ();
+        var handleIntros = HandleIntros(client, e, cancellationTokenSource.Token);
+
+        runningIntroTasks.Add(e.Author.Id, (handleIntros, cancellationTokenSource));
+    }
+
+
+
+
+
+    // for NEW intros only (for now)
+    static async Task HandleIntros(DiscordClient client, MessageCreateEventArgs e, CancellationToken cancellationToken) {
         if (!setupFinished || e.Author == client.CurrentUser) return;
         Console.WriteLine("Message received. Not ours, and client is ready.");
 
         DiscordMessage msg = e.Message;
-        if (msg.Channel != Introductions!) return;
+        if (msg.Channel != IlluminatePlayground!) return; // TODO - CHANGE CHANENEL
         Console.WriteLine("IntroductionsChannelMessage");
 
-        //// msg not long enough
-        //if (msg.Content.Length <= 130)
-        //{
-        //    await msg.DeleteAsync();
-        //    await msg.RespondAsync();
+        //skip this all if a member is already verified (has member role)
+        if ((await e.Author.ConvertToMember(Ecolinguist!)).Roles.Contains(MemberRole)) return;
+        
+        // msg not long enough
+        if (msg.Content.Length <= 150) {
 
-        //    return;
-        //    // delete msg, funeral msg, "msg too short pls prolongue + copypaste og msg"
+            string responseContent = $"Hey {e.Author.Username}, sadly your message is too short and it will be deleted shortly. Please copy the contents if you want to edit and re-post it. We require the intros to be at least 150 characters long, to prevent unwanted bots from entering the server.";
+            // some ideas from members:
+            // string responseContent = $"Hey {e.Author.Username}, your introduction is too short! Please write a new, longer one, or edit the old one to be long enough. You have 3 minutes before your intro gets deleted.";
+            // string responseContent = $"Hey {e.Author.Username}, your introduction is too short! It will be deleted shortly. Please copy the contents if you want to edit and re-post it. We require the intros to be at least 150 characters long, to prevent unwanted bots from entering the server.";
+            // "The message will be deleted shortly, please copy the contents if you don't want to retype it"
+            // "Sadly your message is too short and it will have to be deleted. Please, copy the contents of your message if you want to edit and re-post it"
+
+            // TODO - TELL EM THE MSG WILL DIP IF THEY SEND A NEW MSG 
+
+            var responseMsg = await msg.RespondAsync(responseContent);
+
+            // wait for 3 min before deleting stuff
+            await Task.Delay(3 * 60 * 1000, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested) return;
+
+            await msg.DeleteAsync();
+
+            await responseMsg.DeleteAsync();
+
+            // delete msg, funeral msg, "msg too short pls prolongue + copypaste og msg"
+        }
+
+        // TODO - await CarlPings!.SendMessageAsync($"{IntroPingRole!.Mention} new intro");
+    }
+
+
+
+
+
+    static async Task HandleEditedIntros(DiscordClient client, MessageUpdateEventArgs e) {
+        if (!setupFinished || e.Author == client.CurrentUser) return;
+        Console.WriteLine("Message received. Not ours, and client is ready.");
+
+        DiscordMessage msg = e.Message;
+        if (msg.Channel != IlluminatePlayground!) return; // TODO - CHANGE ZE CHAAAAAAANNNNNELL
+        Console.WriteLine("IntroductionsChannelMessage");
+
+        /*
+        // not verified, isIntroMsg, short -> long :: msg was short but now is long enough
+            - kill 3min timer (is always within the timer), delete automsg (msg was too short), pingNewIntro, remove "!", add "check"
+        // not verified, isIntroMsg, long -> short :: msg was long enoug but now is short
+            - start 3min timer, send automsg, remove "check", add "!"
+        // not verified, isIntroMsg, short -> short :: msg was short and still is short
+            - reset 3min timer (is always within the timer), update automsg (STILL short)
+        // not verified, isIntroMsg, long -> long :: msg was long and still is long
+            - return;
+        // not verified, isNOTintroMsg, short -> long :: msg was short but now is long enough
+            - return;
+        // not verified, isNOTintroMsg, long -> short :: msg was long enoug but now is short
+            - return;
+        // not verified, isNOTintroMsg, short -> short :: msg was short and still is short
+            - return;
+        // not verified, isNOTintroMsg, long -> long :: msg was long and still is long
+            - return;
+
+        // verified, isIntroMsg, short -> long :: msg was short but now is long enough
+            - return; 
+        // verified, isIntroMsg, long -> short :: msg was long enoug but now is short
+            - trigger reverification (ping a role (autoping?) for edited intros w a hyperlink), react w a "?" (mod has to rereact for it to dip - signifies that the intro is ok)
+        // verified, isIntroMsg, short -> short :: msg was short and still is short
+            - trigger reverification (ping a role (autoping?) for edited intros w a hyperlink), react w a "?" (mod has to rereact for it to dip - signifies that the intro is ok)
+        // verified, isIntroMsg, long -> long :: msg was long and still is long
+            - return;
+        // verified, isNOTintroMsg, short -> long :: msg was short but now is long enough
+            - return;
+        // verified, isNOTintroMsg, long -> short :: msg was long enoug but now is short
+            - return;
+        // verified, isNOTintroMsg, short -> short :: msg was short and still is short
+            - return;
+        // verified, isNOTintroMsg, long -> long :: msg was long and still is long
+            - return;
+
+        */
+
+        //if (msg.Reactions.Any(reaction => reaction.IsMe)) {
+        await client.SendMessageAsync(IlluminatePlayground!, msg.Reactions.Any(reaction => reaction.IsMe).ToString());
+        await client.SendMessageAsync(IlluminatePlayground!, msg.Reactions.Count.ToString());
+        msg = await IlluminatePlayground!.GetMessageAsync(msg.Id);
+        await client.SendMessageAsync(IlluminatePlayground!, msg.Reactions.Any(reaction => reaction.IsMe).ToString());
+        await client.SendMessageAsync(IlluminatePlayground!, (await msg.GetReactionsAsync(GreenCheck!)).Count.ToString());
         //}
 
-        await CarlPings!.SendMessageAsync($"{IntroPingRole!.Mention} new intro");
     }
+
+
+
+
+
+
+
+
+
+
 }
 
-file enum RoleIDs:ulong {
+    file enum RoleIDs:ulong {
     EcolinguistVideoRole = 1101849321349070858,
     GermanicVideoRole = 1101850559016869968,
     SlavicVideoRole = 1101850758607020052,
     RomanceVideoRole = 1101850296587649114,
     PolishVideoRole = 1101850816056406047,
     IntroPingRole = 1208816932019634237,
+    MemberRole = 863414845897179146,
 }
 
 
