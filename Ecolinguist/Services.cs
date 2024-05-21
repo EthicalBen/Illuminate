@@ -66,7 +66,6 @@ internal static partial class Services {
 			Introductions = Ecolinguist.Channels.FirstOrDefault(guild => guild.Key == (ulong)ChannelIDs.Introductions).Value;
 			CarlPings = Ecolinguist.Channels.FirstOrDefault(guild => guild.Key == (ulong)ChannelIDs.CarlPings).Value;
 
-
 			//Roles
 			EcolinguistVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.EcolinguistVideoRole).Value;
 			GermanicVideoRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.GermanicVideoRole).Value;
@@ -78,15 +77,7 @@ internal static partial class Services {
 			UnverifiedRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.UnverifiedRole).Value;
 			SeniorModeratorRole = Ecolinguist.Roles.FirstOrDefault(guild => guild.Key == (ulong)RoleIDs.SeniorModeratorRole).Value;
 
-			//Dict
-			/*
-			messages["slavic"] = $"{SlavicVideoRole.Mention} Norbert uploaded a video! ";
-			messages["germanic"] = $"{GermanicVideoRole.Mention} Norbert uploaded a video! ";
-			messages["ecolinguist"] = $"{EcolinguistVideoRole.Mention} Norbert uploaded a video! ";
-			messages["polish"] = $"{PolishVideoRole.Mention} Norbert uploaded a video! ";
-			messages["romance"] = $"{RomanceVideoRole.Mention} Norbert uploaded a video! ";
-			*/
-
+			//Mentions
 			mentions["slavic"] = SlavicVideoRole.Mention;
 			mentions["germanic"] = GermanicVideoRole.Mention;
 			mentions["ecolinguist"] = EcolinguistVideoRole.Mention;
@@ -295,19 +286,6 @@ internal static partial class Services {
 			"""
 		);
 	}
-	//Notes:
-	// TODO - HANDLE EDITED INTROS, REMOVE EXCLAMATION MARK
-
-	// some ideas from members:
-	// string responseContent = $"Hey {e.Author.Username}, your introduction is too short! Please write a new, longer one, or edit the old one to be long enough. You have 3 minutes before your intro gets deleted.";
-	// string responseContent = $"Hey {e.Author.Username}, your introduction is too short! It will be deleted shortly. Please copy the contents if you want to edit and re-post it. We require the intros to be at least 150 characters long, to prevent unwanted bots from entering the server.";
-	// "The message will be deleted shortly, please copy the contents if you don't want to retype it"
-	// "Sadly your message is too short and it will have to be deleted. Please, copy the contents of your message if you want to edit and re-post it"
-
-	// TODO - TELL The Author know: THE MSG WILL DIP IF THEY SEND A NEW MSG 
-	// wait for 3 min before deleting stuff
-	// for NEW intros only (for now)
-
 
 
 	private static async Task HandleEditedIntros(DiscordClient client, MessageUpdateEventArgs e) {
@@ -320,98 +298,61 @@ internal static partial class Services {
 		bool isIntroMessage = await HasIlluminateReactionAsync(client, e.Message, new[] { CheckMark!, QuestionMark!, ExclamationMark! });
 		bool isLongEnough = e.Message.Content.Length >= 150;
 		bool wasLongEnough = e.MessageBefore.Content.Length >= 150;
-		/*
-		// not verified, isNOTintroMsg, short -> long :: msg was short but now is long enough
-	✓		- return;
-		// not verified, isNOTintroMsg, long -> short :: msg was long enoug but now is short
-	✓		- return;
-		// not verified, isNOTintroMsg, short -> short :: msg was short and still is short
-	✓		- return;
-		// not verified, isNOTintroMsg, long -> long :: msg was long and still is long
-	✓		- return;
-		// verified, isNOTintroMsg, short -> long :: msg was short but now is long enough
-	✓		- return;
-		// verified, isNOTintroMsg, long -> short :: msg was long enoug but now is short
-	✓		- return;
-		// verified, isNOTintroMsg, short -> short :: msg was short and still is short
-	✓		- return;
-		// verified, isNOTintroMsg, long -> long :: msg was long and still is long
-	✓		- return;
-		*/
-		if(!isIntroMessage) return;
-		//Is Intro Message
 
-		/*
-		// not verified, short -> long :: msg was short but now is long enough
-			- kill 3min timer (is always within the timer), delete automsg (msg was too short), pingNewIntro, remove "!", add "check"
-		// not verified, long -> short :: msg was long enoug but now is short
-			- start 3min timer, send automsg, remove "check", add "!"
-		// not verified, short -> short :: msg was short and still is short
-			- reset 3min timer (is always within the timer), update automsg (STILL short)
-		// not verified, long -> long :: msg was long and still is long
-			- return;
-		// verified, short -> long :: msg was short but now is long enough
-			- return; 
-		// verified, long -> short :: msg was long enoug but now is short
-			- trigger reverification (ping a role (autoping?) for edited intros w a hyperlink), react w a "?" (mod has to rereact for it to dip - signifies that the intro is ok)
-		// verified, short -> short :: msg was short and still is short
-			- trigger reverification (ping a role (autoping?) for edited intros w a hyperlink), react w a "?" (mod has to rereact for it to dip - signifies that the intro is ok)
-		// verified, long -> long :: msg was long and still is long
-			- return;
-		*/
+		if(!isIntroMessage) return;
+
 		switch((isVerified, wasLongEnough, isLongEnough)) {
 			case (false, false, false): {
-					//reset timer, update message
-					CancellationTokenSource tokenSource = new();
-					IntroTaskData? data = runningDeletionTasks[e.Message];
-					DiscordMessage statusMessage;
-					data?.TokenSource.Cancel();
-					if(data?.StatusMessage is not null) {
-						statusMessage = data.StatusMessage;
-						await UpdateStatusMessageAsync(statusMessage);
-					} else {
-						statusMessage = await CreateStatusMessageAsync(e.Message);
-					}
-					Task handleIntro = DeleteAfterDelayAsync(client, e.Message, tokenSource.Token, statusMessage);
-					runningDeletionTasks.UpdateTask(e.Message, handleIntro, tokenSource);
-					break;
+				//reset timer, update message
+				CancellationTokenSource tokenSource = new();
+				IntroTaskData? data = runningDeletionTasks[e.Message];
+				DiscordMessage statusMessage;
+				data?.TokenSource.Cancel();
+				if(data?.StatusMessage is not null) {
+					statusMessage = data.StatusMessage;
+					await UpdateStatusMessageAsync(statusMessage);
+				} else {
+					statusMessage = await CreateStatusMessageAsync(e.Message);
 				}
+				Task handleIntro = DeleteAfterDelayAsync(client, e.Message, tokenSource.Token, statusMessage);
+				runningDeletionTasks.UpdateTask(e.Message, handleIntro, tokenSource);
+				break;
+			}
 			case (false, false, true): {
-					//accept message, change reactions, delete timer, delete status message
-					await AcceptMessageAsync(client, e.Message);
-					IntroTaskData? data = runningDeletionTasks[e.Message];
-					data?.TokenSource.Cancel();
-					runningDeletionTasks.Remove(e.Message);
-					await SafeDeleteAsync(data?.StatusMessage);
-					await e.Message.CreateReactionAsync(CheckMark!);
-					await e.Message.DeleteReactionAsync(ExclamationMark!, client.CurrentUser);
-					break;
-				}
+				//accept message, change reactions, delete timer, delete status message
+				await AcceptMessageAsync(client, e.Message);
+				IntroTaskData? data = runningDeletionTasks[e.Message];
+				data?.TokenSource.Cancel();
+				runningDeletionTasks.Remove(e.Message);
+				await SafeDeleteAsync(data?.StatusMessage);
+				await e.Message.CreateReactionAsync(CheckMark!);
+				await e.Message.DeleteReactionAsync(ExclamationMark!, client.CurrentUser);
+				break;
+			}
 			case (false, true, false): {
-					//start timer, change reactions, send status message
-					CancellationTokenSource tokenSource = new();
-					DiscordMessage statusMessage = await CreateStatusMessageAsync(e.Message);
-					Task handleIntro = DeleteAfterDelayAsync(client, e.Message, tokenSource.Token, statusMessage);
-					runningDeletionTasks.Add(e.Message, handleIntro, tokenSource, statusMessage);
-					await e.Message.CreateReactionAsync(ExclamationMark!);
-					await e.Message.DeleteReactionAsync(CheckMark!, client.CurrentUser);
-					break;
-				}
+				//start timer, change reactions, send status message
+				CancellationTokenSource tokenSource = new();
+				DiscordMessage statusMessage = await CreateStatusMessageAsync(e.Message);
+				Task handleIntro = DeleteAfterDelayAsync(client, e.Message, tokenSource.Token, statusMessage);
+				runningDeletionTasks.Add(e.Message, handleIntro, tokenSource, statusMessage);
+				await e.Message.CreateReactionAsync(ExclamationMark!);
+				await e.Message.DeleteReactionAsync(CheckMark!, client.CurrentUser);
+				break;
+			}
 			case (true, _, false): {
-					//add question mark reaction, send ping
-					await e.Message.CreateReactionAsync(QuestionMark!);
-					await client.SendMessageAsync(
-						CarlPings!,
-						$"""
+				//add question mark reaction, send ping
+				await e.Message.CreateReactionAsync(QuestionMark!);
+				await client.SendMessageAsync(
+					CarlPings!,
+					$"""
 						{IntroPingRole!.Mention}
 						{e.Author.Mention} has edited their introduction and it needs to be re-verified!
 						{e.Message.JumpLink}
 						"""
-					);
-					break;
-				}
-			case (false, true, true):
-			case (true, _, true):
+				);
+				break;
+			}
+			default:
 				return;
 		}
 	}
