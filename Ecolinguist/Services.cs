@@ -181,7 +181,7 @@ internal static partial class Services {
 
 
 	private static async Task HandleIntroCreated(DiscordClient client, MessageCreateEventArgs e) {
-		if(!setupFinished || e.Author == client.CurrentUser || e.Message.Channel != IlluminatePlayground!) return; // TODO - CHANGE CHANNEL
+		if(!setupFinished || e.Author == client.CurrentUser || e.Message.Channel != Introductions!) return; // TODO - CHANGE CHANNEL
 		Console.WriteLine("Message received. Not ours, client is ready, correct channel.");
 		e.Handled = true;
 
@@ -202,7 +202,7 @@ internal static partial class Services {
 
 
 	private static async Task HandleIntroReactionAdded(DiscordClient client, MessageReactionAddEventArgs e) {
-		if(!setupFinished || e.User == client.CurrentUser || e.Channel != IlluminatePlayground!) return; // TODO - CHANGE CHANNEL
+		if(!setupFinished || e.User == client.CurrentUser || e.Channel != Introductions!) return; // TODO - CHANGE CHANNEL
 		Console.WriteLine("Reaction received. Not ours, client is ready, correct channel.");
 
 		e.Handled = true;
@@ -289,7 +289,7 @@ internal static partial class Services {
 
 
 	private static async Task HandleEditedIntros(DiscordClient client, MessageUpdateEventArgs e) {
-		if(!setupFinished || e.Author == client.CurrentUser || e.Channel != IlluminatePlayground!) return; // TODO - CHANGE CHANNEL
+		if(!setupFinished || e.Author == client.CurrentUser || e.Channel != Introductions!) return; // TODO - CHANGE CHANNEL
 		Console.WriteLine("IntroductionsChannelMessage");
 
 
@@ -297,7 +297,7 @@ internal static partial class Services {
 		bool isVerified = author.Roles.Contains(MemberRole!);
 		bool isIntroMessage = await HasIlluminateReactionAsync(client, e.Message, new[] { CheckMark!, QuestionMark!, ExclamationMark! });
 		bool isLongEnough = e.Message.Content.Length >= 150;
-		bool wasLongEnough = e.MessageBefore.Content.Length >= 150;
+		bool wasLongEnough = e.MessageBefore.Content.Length >= 150; //TODO - NULL REFERENCE EXCEPTION!!!
 
 		if(!isIntroMessage) return;
 
